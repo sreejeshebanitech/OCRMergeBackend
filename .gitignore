@@ -1,0 +1,30 @@
+# Node.js specific ignores
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs/
+*.log
+
+# Dependency directories
+dist/
+build/
+out/
+
+# Environment files
+.env
+.env.local
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+
+# Coverage reports
+coverage/
+*.lcov
