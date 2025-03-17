@@ -34,6 +34,8 @@ const deleteFolderContents = (folderPath) => {
 
 exports.handleFileUpload = async (req, res) => {
   try {
+
+    let  ModuleName = " ";
     const files = req.files;
     if (!files.math1 || !files.english1) {
       return res.status(400).json({ error: "Math1 and English1 files are required." });
@@ -65,8 +67,13 @@ exports.handleFileUpload = async (req, res) => {
       try {
         const ocrResult = await runOcrAndSave([imagePaths[0]], key); // Only first page
 
+        ModuleName = ocrResult.mockNumber;
+
+
+        
         // Store extracted data
         globalData[key] = {
+
           name: ocrResult.name || "Null",
           email: ocrResult.email || "Null",
           dateSubmitted: ocrResult.dateSubmitted || "Null",
@@ -95,13 +102,13 @@ exports.handleFileUpload = async (req, res) => {
       email: globalData.math1?.email || globalData.english1?.email || "Null",
       dateSubmitted: globalData.math1?.dateSubmitted || globalData.english1?.dateSubmitted || "Null",
       scores: {
-        English1: `${globalData.english1?.score}/${globalData.english1?.totalScore} (${calculatePercentage(globalData.english1?.score, globalData.english1?.totalScore)})`,
-        English2: globalData.english2 ? `${globalData.english2?.score}/${globalData.english2?.totalScore} (${calculatePercentage(globalData.english2?.score, globalData.english2?.totalScore)})` : "N/A",
-        TotalEnglish: `${totalEngScore}/${totalEngTotal} (${calculatePercentage(totalEngScore, totalEngTotal)})`,
-        Math1: `${globalData.math1?.score}/${globalData.math1?.totalScore} (${calculatePercentage(globalData.math1?.score, globalData.math1?.totalScore)})`,
-        Math2: globalData.math2 ? `${globalData.math2?.score}/${globalData.math2?.totalScore} (${calculatePercentage(globalData.math2?.score, globalData.math2?.totalScore)})` : "N/A",
-        TotalMath: `${totalMathScore}/${totalMathTotal} (${calculatePercentage(totalMathScore, totalMathTotal)})`,
-        Overall: `${totalSecuredScore}/${totalPossibleScore} (${calculatePercentage(totalSecuredScore, totalPossibleScore)})`
+        English1: `${globalData.english1?.score + 100} [Scale of 100 - 400]`,
+        English2: globalData.english2 ? `${globalData.english2?.score + 100} [Scale of 100 - 400]` : "N/A",
+        TotalEnglish: `${totalEngScore + 200} [Scale of 200 - 800]`,
+        Math1: `${globalData.math1?.score + 100} [Scale of 100 - 400]`,
+        Math2: globalData.math2 ? `${globalData.math2?.score + 100} [Scale of 100 - 400]` : "N/A",
+        TotalMath: `${totalMathScore + 200} [Scale of 200 - 800]`,
+        Overall: `${totalSecuredScore + 400} [Scale of 400 - 1600]`,
       }
     };
 
@@ -112,7 +119,7 @@ exports.handleFileUpload = async (req, res) => {
     doc.pipe(pdfStream);
 
     // Header
-    doc.fontSize(18).font('Helvetica-Bold').text("Student Final Report", { align: "center" });
+    doc.fontSize(18).font('Helvetica-Bold').text(`SAT SCORE  : ${ModuleName}`, { align: "center" }); //Module Name in Heading Goes Here
     doc.moveDown();
   
     // Student Details
@@ -124,29 +131,33 @@ exports.handleFileUpload = async (req, res) => {
     doc.moveDown();
 
     // English Report
-    doc.fontSize(14).font('Helvetica-Bold').text("English Report");
+    doc.fontSize(14).font('Helvetica-Bold').text("Raw Score - Digital Reading And Writing");
     doc.moveDown();
-    doc.fontSize(12).font('Helvetica').text(`English 1: ${reportData.scores.English1}`);
+    doc.fontSize(12).font('Helvetica').text(`Digital Reading And Writing 1 : ${reportData.scores.English1}`);
     if (globalData.english2) {
-      doc.text(`English 2: ${reportData.scores.English2}`);
+      doc.text(`Digital Reading And Writing 2 : ${reportData.scores.English2}`);
     }
-    doc.text(`Total English: ${reportData.scores.TotalEnglish}`);
+    doc.text(`Total Score - Digital Reading And Writing : ${reportData.scores.TotalEnglish}`);
     doc.moveDown();
+
+
 
     // Math Report
-    doc.fontSize(14).font('Helvetica-Bold').text("Math Report");
+    doc.fontSize(14).font('Helvetica-Bold').text("Raw Score - Digital Maths");
     doc.moveDown();
-    doc.fontSize(12).font('Helvetica').text(`Math 1: ${reportData.scores.Math1}`);
+    doc.fontSize(12).font('Helvetica').text(`Digital Maths 1 : ${reportData.scores.Math1}`);
     if (globalData.math2) {
-      doc.text(`Math 2: ${reportData.scores.Math2}`);
+      doc.text(`Digital Maths 2 : ${reportData.scores.Math2}`);
     }
-    doc.text(`Total Math: ${reportData.scores.TotalMath}`);
+    doc.text(`Total Score - Digital Math : ${reportData.scores.TotalMath}`);
     doc.moveDown();
 
-    // Overall Performance
-    doc.fontSize(16).font('Helvetica-Bold').text("Overall Performance");
+
+
+    // Overall Performance With Adjusted Score
+    doc.fontSize(16).font('Helvetica-Bold').text("Overall Score");
     doc.moveDown();
-    doc.fontSize(13).font('Helvetica').text(`Overall: ${reportData.scores.Overall}`);
+    doc.fontSize(13).font('Helvetica').text(`Overall Score : ${reportData.scores.Overall}`);
     doc.moveDown();
 
     doc.end();

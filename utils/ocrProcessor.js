@@ -35,7 +35,17 @@ exports.runOcrAndSave = async (imagePaths, fileType) => {
         extractedData.name = nameMatch ? nameMatch[1].trim() : "Unknown";
         extractedData.email = emailMatch ? emailMatch[1].trim() : "Unknown";
         extractedData.dateSubmitted = dateMatch ? dateMatch[1].trim() : "Unknown";
+
+        // Extract the first string (the one that contains the needed information)
+        const moduleTextData = moduleMatch[0];
+
+        // Use regex to extract the content inside the parentheses
+        const moduleFinalData = moduleTextData.match(/\((.*?)\)/);
+        extractedData.moduleFinal=moduleFinalData;
+
+   
       }
+      
 
       // Extract Score & Total Score
       // Modified regex to handle different score formats
@@ -43,7 +53,7 @@ exports.runOcrAndSave = async (imagePaths, fileType) => {
       extractedData.score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
       extractedData.totalScore = scoreMatch ? parseInt(scoreMatch[2]) : 0;
 
-      // Log the score match result for debugging
+
       console.log(`📊 Score match result for ${fileType}:`, scoreMatch);
       console.log(`📊 Extracted score for ${fileType}: ${extractedData.score}/${extractedData.totalScore}`);
 

@@ -1,4 +1,5 @@
 const globalData = {
+  module:"",
   math1: {
     name: "",
     email: "",
