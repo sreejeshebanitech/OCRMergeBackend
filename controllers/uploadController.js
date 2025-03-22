@@ -1,5 +1,7 @@
 const fs = require("fs");
 const path = require("path");
+const jwt = require("jsonwebtoken"); // Import JWT
+
 const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const { convertPdfToImages } = require("../utils/pdfToImage");
@@ -102,15 +104,16 @@ exports.handleFileUpload = async (req, res) => {
       email: globalData.math1?.email || globalData.english1?.email || "Null",
       dateSubmitted: globalData.math1?.dateSubmitted || globalData.english1?.dateSubmitted || "Null",
       scores: {
-        English1: `${globalData.english1?.score + 100} [Scale of 100 - 400]`,
-        English2: globalData.english2 ? `${globalData.english2?.score + 100} [Scale of 100 - 400]` : "N/A",
-        TotalEnglish: `${totalEngScore + 200} [Scale of 200 - 800]`,
-        Math1: `${globalData.math1?.score + 100} [Scale of 100 - 400]`,
-        Math2: globalData.math2 ? `${globalData.math2?.score + 100} [Scale of 100 - 400]` : "N/A",
-        TotalMath: `${totalMathScore + 200} [Scale of 200 - 800]`,
-        Overall: `${totalSecuredScore + 400} [Scale of 400 - 1600]`,
+        English1: `${globalData.english1?.score + 100} [ 100 - 400]`,
+        English2: globalData.english2 ? `${globalData.english2?.score + 100} [ 100 - 400]` : "N/A",
+        TotalEnglish: `${totalEngScore + 200} [200 - 800]`,
+        Math1: `${globalData.math1?.score + 100} [ 100 - 400]`,
+        Math2: globalData.math2 ? `${globalData.math2?.score + 100} [100 - 400]` : "N/A",
+        TotalMath: `${totalMathScore + 200} [ 200 - 800]`,
+        Overall: `${totalSecuredScore + 400} [ 400 - 1600]`,
       }
     };
+
 
     // Generate Final Report PDF
     const doc = new PDFDocument();
@@ -118,49 +121,69 @@ exports.handleFileUpload = async (req, res) => {
     const pdfStream = fs.createWriteStream(finalReportPath);
     doc.pipe(pdfStream);
 
-    // Header
-    doc.fontSize(18).font('Helvetica-Bold').text(`SAT SCORE  : ${ModuleName}`, { align: "center" }); //Module Name in Heading Goes Here
-    doc.moveDown();
-  
-    // Student Details
-    doc.fontSize(14).font('Helvetica-Bold').text("Student Details and Information");
-    doc.moveDown();
-    doc.fontSize(12).font('Helvetica').text(`Name: ${reportData.name}`);
-    doc.text(`Email: ${reportData.email}`);
-    doc.text(`Date Submitted: ${reportData.dateSubmitted}`);
-    doc.moveDown();
-
-    // English Report
-    doc.fontSize(14).font('Helvetica-Bold').text("Raw Score - Digital Reading And Writing");
-    doc.moveDown();
-    doc.fontSize(12).font('Helvetica').text(`Digital Reading And Writing 1 : ${reportData.scores.English1}`);
-    if (globalData.english2) {
-      doc.text(`Digital Reading And Writing 2 : ${reportData.scores.English2}`);
-    }
-    doc.text(`Total Score - Digital Reading And Writing : ${reportData.scores.TotalEnglish}`);
-    doc.moveDown();
 
 
+    
+      // Header Settings
+      const headerHeight = 60;
+      const logoPath = "public/logo.png"; // Ensure this path is correct
 
-    // Math Report
-    doc.fontSize(14).font('Helvetica-Bold').text("Raw Score - Digital Maths");
-    doc.moveDown();
-    doc.fontSize(12).font('Helvetica').text(`Digital Maths 1 : ${reportData.scores.Math1}`);
-    if (globalData.math2) {
-      doc.text(`Digital Maths 2 : ${reportData.scores.Math2}`);
-    }
-    doc.text(`Total Score - Digital Math : ${reportData.scores.TotalMath}`);
-    doc.moveDown();
+      // Draw Gradient Header
+      const gradient = doc.linearGradient(0, 0, doc.page.width, 0);
+      gradient.stop(0, "#add8e6") // Light blue (left)
+            .stop(1, "#4682b4"); // Medium blue (right)
 
+      doc.rect(0, 0, doc.page.width, headerHeight).fill(gradient);
 
+      // Insert Logo
+      doc.image(logoPath, 20, 10, { width: 50 });
 
-    // Overall Performance With Adjusted Score
-    doc.fontSize(16).font('Helvetica-Bold').text("Overall Score");
-    doc.moveDown();
-    doc.fontSize(13).font('Helvetica').text(`Overall Score : ${reportData.scores.Overall}`);
-    doc.moveDown();
+      // Add Title to Header
+      doc.fillColor("white")
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text(`SAT Score Report : ${ModuleName}`, 80, 20, { align: "center" });
 
-    doc.end();
+      // **Reset text color & Move Below Header**
+      doc.fillColor("black");  // Ensure content is printed in black
+      doc.moveDown(3); // Moves down to avoid overlapping
+
+      // **Now Add Content**
+      doc.fontSize(14).font("Helvetica-Bold").text("Student Details and Information");
+      doc.moveDown();
+      doc.fontSize(12).font("Helvetica").text(`Name: ${reportData.name}`);
+      doc.text(`Email: ${reportData.email}`);
+      doc.text(`Date Submitted: ${reportData.dateSubmitted}`);
+      doc.moveDown();
+
+      // English Report
+      doc.fontSize(14).font("Helvetica-Bold").text("Raw Score - Digital Reading And Writing");
+      doc.moveDown();
+      doc.fontSize(12).font("Helvetica").text(`Digital Reading And Writing 1 : ${reportData.scores.English1}`);
+      if (globalData.english2) {
+          doc.text(`Digital Reading And Writing 2 : ${reportData.scores.English2}`);
+      }
+      doc.text(`Total Score - Digital Reading And Writing : ${reportData.scores.TotalEnglish}`);
+      doc.moveDown();
+
+      // Math Report
+      doc.fontSize(14).font("Helvetica-Bold").text("Raw Score - Digital Maths");
+      doc.moveDown();
+      doc.fontSize(12).font("Helvetica").text(`Digital Maths 1 : ${reportData.scores.Math1}`);
+      if (globalData.math2) {
+          doc.text(`Digital Maths 2 : ${reportData.scores.Math2}`);
+      }
+      doc.text(`Total Score - Digital Math : ${reportData.scores.TotalMath}`);
+      doc.moveDown();
+
+      // Overall Performance With Adjusted Score
+      doc.fontSize(16).font("Helvetica-Bold").text("Overall Score");
+      doc.moveDown();
+      doc.fontSize(13).font("Helvetica").text(`Overall Score : ${reportData.scores.Overall}`);
+      doc.moveDown();
+
+      // **Finalize the PDF**
+      doc.end();
 
     // Wait for the PDF to be written
     await new Promise(resolve => pdfStream.on("finish", resolve));
@@ -315,3 +338,52 @@ Contact: +91-XXXXXXXXXX`,
     return false;
   }
 }
+
+
+const SECRET_KEY = process.env.JWTTOKEN; // Load JWT Secret Key
+
+
+// Login Function (Exported)
+// Hardcoded username and password
+const USERNAME = "admin";
+const PASSWORD = "admin123";
+
+// Login Function
+exports.login = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Check credentials
+        if (username !== USERNAME || password !== PASSWORD) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate JWT Token
+        const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: "1h" });
+
+        return res.json({ message: "Login successful", token });
+    } catch (error) {
+        console.error("Error in login:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+// Verify Login Controller
+exports.verifyLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(401).json({ message: "Access denied. No token provided." });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, SECRET_KEY);
+
+    return res.status(200).json({ message: "Token is valid", user: decoded });
+  } catch (error) {
+    console.error("Error in verifyLogin:", error.message);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
